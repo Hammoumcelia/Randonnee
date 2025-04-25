@@ -5,6 +5,8 @@ import 'package:randonnee/screens/register.dart';
 import 'package:provider/provider.dart';
 import 'package:randonnee/services/auth_service.dart';
 import 'package:randonnee/services/hike_service.dart';
+import 'package:randonnee/screens/safety_tips.dart';
+import 'package:randonnee/screens/profile.dart';
 
 void main() {
   runApp(
@@ -36,6 +38,9 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
+        '/safety-tips': (context) => const SafetyTipsScreen(),
+
+        '/profile': (context) => const ProfileScreen(),
       },
       debugShowCheckedModeBanner: false,
     );

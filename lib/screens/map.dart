@@ -12,7 +12,6 @@ class Position3D {
   final double latitude;
   final double longitude;
   final double altitude;
-
   Position3D(this.latitude, this.longitude, this.altitude);
 }
 
