@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -7,6 +8,7 @@ import 'package:randonnee/models/hike.dart';
 import 'package:randonnee/services/hike_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
 
 class Position3D {
   final double latitude;
@@ -16,37 +18,65 @@ class Position3D {
 }
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  final Hike? initialHike;
+  final bool showOnlySelectedHike;
+
+  const MapScreen({
+    super.key,
+    this.initialHike,
+    this.showOnlySelectedHike = false,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
 }
 
 class _MapScreenState extends State<MapScreen> {
+  final MapController _mapController = MapController();
   Position? _currentPosition;
   double? _distanceToHike;
   double? _elevationGain;
   Hike? _selectedHike;
   bool _isTracking = false;
+  bool _isLoadingRoute = false;
   final List<Position3D> _pathPoints = [];
+  List<LatLng> _routePoints = [];
   StreamSubscription<Position>? _positionStream;
 
   @override
   void initState() {
     super.initState();
-    _checkLocationPermission();
+    _checkLocationPermission().then((_) {
+      _startLocationTracking();
+      if (widget.initialHike != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _selectHike(widget.initialHike!);
+          _mapController.move(
+            LatLng(
+              widget.initialHike!.coordinates!.latitude,
+              widget.initialHike!.coordinates!.longitude,
+            ),
+            14,
+          );
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _positionStream?.cancel();
+    _mapController.dispose();
     super.dispose();
   }
 
   Future<void> _checkLocationPermission() async {
-    final status = await Permission.location.request();
-    if (status.isGranted) {
-      _startLocationTracking();
+    final status = await Permission.location.status;
+    if (!status.isGranted) {
+      final result = await Permission.location.request();
+      if (!result.isGranted) {
+        throw Exception('Permission de localisation non accordée');
+      }
     }
   }
 
@@ -97,18 +127,86 @@ class _MapScreenState extends State<MapScreen> {
     setState(() => _elevationGain = gain);
   }
 
-  void _selectHike(Hike hike) {
+  Future<List<LatLng>> _getRoutePoints(LatLng start, LatLng end) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+          'https://router.project-osrm.org/route/v1/foot/'
+          '${start.longitude},${start.latitude};'
+          '${end.longitude},${end.latitude}?overview=full&geometries=geojson',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['routes'] == null || data['routes'].isEmpty) {
+          throw Exception('Aucun itinéraire trouvé');
+        }
+        final geometry = data['routes'][0]['geometry']['coordinates'];
+        return geometry
+            .map<LatLng>((coord) => LatLng(coord[1], coord[0]))
+            .toList();
+      } else {
+        throw Exception('Erreur de serveur: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Erreur de connexion: $e');
+    }
+  }
+
+  Future<void> _selectHike(Hike hike) async {
+    if (_currentPosition == null) return;
+
     setState(() {
       _selectedHike = hike;
+      _isLoadingRoute = true;
       _isTracking = true;
-      _pathPoints.clear();
-      _elevationGain = null;
     });
+
+    try {
+      final route = await _getRoutePoints(
+        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
+        LatLng(hike.coordinates!.latitude, hike.coordinates!.longitude),
+      );
+
+      setState(() {
+        _routePoints = route;
+        _pathPoints.clear();
+        _elevationGain = null;
+      });
+
+      _mapController.move(
+        LatLng(hike.coordinates!.latitude, hike.coordinates!.longitude),
+        14,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Erreur de calcul d'itinéraire: $e")),
+      );
+    } finally {
+      setState(() => _isLoadingRoute = false);
+    }
+  }
+
+  void _zoomIn() {
+    final currentCenter = _mapController.camera.center;
+    final currentZoom = _mapController.camera.zoom;
+    _mapController.move(currentCenter, currentZoom + 0.5);
+  }
+
+  void _zoomOut() {
+    final currentCenter = _mapController.camera.center;
+    final currentZoom = _mapController.camera.zoom;
+    _mapController.move(currentCenter, currentZoom - 0.5);
   }
 
   @override
   Widget build(BuildContext context) {
-    final hikes = Provider.of<HikeService>(context).hikes;
+    final hikeService = Provider.of<HikeService>(context);
+    final hikes =
+        widget.showOnlySelectedHike
+            ? (widget.initialHike != null ? [widget.initialHike!] : [])
+            : hikeService.availableHikes;
 
     return Scaffold(
       appBar: AppBar(
@@ -124,10 +222,25 @@ class _MapScreenState extends State<MapScreen> {
       body: Stack(
         children: [
           FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
-              initialCenter: const LatLng(28.0339, 1.6596),
-              initialZoom: 5.5,
-              onTap: (_, __) => setState(() => _selectedHike = null),
+              initialCenter:
+                  widget.initialHike?.coordinates ??
+                  const LatLng(28.0339, 1.6596),
+              initialZoom: widget.initialHike != null ? 14 : 5.5,
+              interactionOptions: const InteractionOptions(
+                flags:
+                    InteractiveFlag.pinchZoom |
+                    InteractiveFlag.drag |
+                    InteractiveFlag.doubleTapZoom,
+              ),
+              maxZoom: 18,
+              minZoom: 3,
+              onTap:
+                  (_, __) => setState(() {
+                    _selectedHike = null;
+                    _routePoints = [];
+                  }),
             ),
             children: [
               TileLayer(
@@ -135,27 +248,41 @@ class _MapScreenState extends State<MapScreen> {
                     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                 subdomains: ['a', 'b', 'c'],
               ),
+              if (_routePoints.isNotEmpty)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: _routePoints,
+                      color: Colors.green,
+                      strokeWidth: 4,
+                    ),
+                  ],
+                ),
               MarkerLayer(
                 markers: [
-                  ...hikes.map(
-                    (hike) => Marker(
-                      width: 40,
-                      height: 40,
-                      point: LatLng(
-                        hike.coordinates!.latitude,
-                        hike.coordinates!.longitude,
-                      ),
-                      child: GestureDetector(
-                        onTap: () => _selectHike(hike),
-                        child: Icon(
-                          Icons.location_pin,
-                          color:
-                              _selectedHike == hike ? Colors.blue : Colors.red,
-                          size: 40,
+                  ...hikes
+                      .where((h) => h.coordinates != null)
+                      .map(
+                        (hike) => Marker(
+                          width: 40,
+                          height: 40,
+                          point: LatLng(
+                            hike.coordinates!.latitude,
+                            hike.coordinates!.longitude,
+                          ),
+                          child: GestureDetector(
+                            onTap: () => _selectHike(hike),
+                            child: Icon(
+                              Icons.location_pin,
+                              color:
+                                  _selectedHike == hike
+                                      ? Colors.blue
+                                      : Colors.red,
+                              size: 40,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
                   if (_currentPosition != null)
                     Marker(
                       width: 45,
@@ -186,6 +313,25 @@ class _MapScreenState extends State<MapScreen> {
                   ],
                 ),
             ],
+          ),
+          Positioned(
+            right: 16,
+            bottom: 100,
+            child: Column(
+              children: [
+                FloatingActionButton.small(
+                  heroTag: 'zoomIn',
+                  onPressed: _zoomIn,
+                  child: const Icon(Icons.add),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton.small(
+                  heroTag: 'zoomOut',
+                  onPressed: _zoomOut,
+                  child: const Icon(Icons.remove),
+                ),
+              ],
+            ),
           ),
           if (_selectedHike != null || _currentPosition != null)
             Positioned(
@@ -223,6 +369,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             ),
+          if (_isLoadingRoute) const Center(child: CircularProgressIndicator()),
         ],
       ),
       floatingActionButton:
@@ -232,6 +379,7 @@ class _MapScreenState extends State<MapScreen> {
                     () => setState(() {
                       _selectedHike = null;
                       _isTracking = false;
+                      _routePoints = [];
                     }),
                 child: const Icon(Icons.clear),
               )

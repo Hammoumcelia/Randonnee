@@ -4,8 +4,16 @@ import 'package:randonnee/models/hike.dart';
 class HikeCard extends StatelessWidget {
   final Hike hike;
   final VoidCallback onTap;
+  final bool showSaveButton;
+  final VoidCallback? onSave;
 
-  const HikeCard({super.key, required this.hike, required this.onTap});
+  const HikeCard({
+    super.key,
+    required this.hike,
+    required this.onTap,
+    this.showSaveButton = false,
+    this.onSave,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +31,7 @@ class HikeCard extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8.0),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8.0),
-                    child: Image.network(
+                    child: Image.asset(
                       hike.imageUrl!,
                       height: 150,
                       width: double.infinity,
@@ -62,6 +70,26 @@ class HikeCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (showSaveButton && onSave != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.bookmark_add, size: 18),
+                      label: const Text('Enregistrer'),
+                      onPressed: onSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

@@ -4,6 +4,7 @@ class Hike {
   final String id;
   final String title;
   final String location;
+  final String wilaya;
   final LatLng? coordinates;
   final String description;
   final double distance;
@@ -14,20 +15,23 @@ class Hike {
   Hike({
     required this.title,
     required this.location,
+    required this.wilaya,
     required this.coordinates,
     required this.description,
     required this.distance,
     required this.duration,
     required this.difficulty,
     this.imageUrl,
+
     String? id,
   }) : id = id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'id': title.hashCode.toString(),
       'title': title,
       'location': location,
+      'wilaya': wilaya,
       'latitude': coordinates?.latitude, // Nouveau
       'longitude': coordinates?.longitude, // Nouveau
       'description': description,
@@ -43,13 +47,11 @@ class Hike {
       id: map['id'],
       title: map['title'],
       location: map['location'],
+      wilaya: map['wilaya'],
       coordinates:
-          map['coordinates'] != null
-              ? LatLng(
-                map['coordinates']['latitude']?.toDouble() ?? 0.0,
-                map['coordinates']['longitude']?.toDouble() ?? 0.0,
-              )
-              : const LatLng(0, 0),
+          map['latitude'] != null && map['longitude'] != null
+              ? LatLng(map['latitude'], map['longitude'])
+              : null,
       description: map['description'],
       distance: map['distance']?.toDouble() ?? 0.0,
       duration: map['duration']?.toDouble() ?? 0.0,

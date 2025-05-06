@@ -15,6 +15,7 @@ class _CreateHikeScreenState extends State<CreateHikeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
+  final _wilayaController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _distanceController = TextEditingController();
   final _durationController = TextEditingController();
@@ -26,6 +27,7 @@ class _CreateHikeScreenState extends State<CreateHikeScreen> {
   void dispose() {
     _titleController.dispose();
     _locationController.dispose();
+    _wilayaController.dispose();
     _descriptionController.dispose();
     _distanceController.dispose();
     _durationController.dispose();
@@ -39,6 +41,7 @@ class _CreateHikeScreenState extends State<CreateHikeScreen> {
       final hike = Hike(
         title: _titleController.text,
         location: _locationController.text,
+        wilaya: _wilayaController.text,
         coordinates: LatLng(
           double.parse(_latitudeController.text),
           double.parse(_longitudeController.text),
@@ -47,6 +50,7 @@ class _CreateHikeScreenState extends State<CreateHikeScreen> {
         distance: double.parse(_distanceController.text),
         duration: double.parse(_durationController.text),
         difficulty: _difficulty,
+        imageUrl: 'assets/images/default_hike.jpg',
       );
 
       try {

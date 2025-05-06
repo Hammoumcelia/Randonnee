@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:randonnee/services/auth_service.dart';
-import 'package:randonnee/screens/safety_tips.dart';
 import 'package:randonnee/widgets/messagerie_widget.dart';
 
 class ProfileScreen extends StatelessWidget {

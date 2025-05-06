@@ -15,7 +15,7 @@ class HikeDetailsScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (hike.imageUrl != null) Image.network(hike.imageUrl!),
+            if (hike.imageUrl != null) Image.asset(hike.imageUrl!),
             const SizedBox(height: 16),
             Text(
               hike.title,

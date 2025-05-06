@@ -31,19 +31,21 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.0.5
-  flutter_map: ^8.1.1
-  latlong2: ^0.9.0
-  geolocator: ^14.0.0
-  flutter_polyline_points: ^2.1.0  # Version compatible avec http 1.x
+  flutter_map: ^8.1.1 # Version compatible avec les autres dépendances
+  latlong2: ^0.9.1
+  geolocator: ^14.0.0 # Version compatible
+  flutter_polyline_points: ^2.1.0 # Version compatible
   permission_handler: ^12.0.0+1
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  http: ^1.3.0
+  path_provider: ^2.0.15
+  dio: ^5.8.0+1 # Version compatible
+  cupertino_icons: ^1.0.5
+  
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -68,6 +70,11 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/images/background.jpg
+    - assets/images/tassili.jpg
+    - assets/images/chrea.jpg
+    - assets/images/djurdjura.jpg
+    - assets/images/ghoufi.jpg
+  
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
