@@ -105,7 +105,7 @@ class SafetyTipsScreen extends StatelessWidget {
             Center(
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.emergency),
-                label: const Text('Appeler les secours'),
+                label: const Text('🚨 Lancer une alerte (SOS) 🚨'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
@@ -114,7 +114,7 @@ class SafetyTipsScreen extends StatelessWidget {
                   // Implémenter l'appel d'urgence
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Composition du 112 simulée'),
+                      content: Text('Une alerte de détresse a été simulée'),
                       duration: Duration(seconds: 2),
                     ),
                   );
