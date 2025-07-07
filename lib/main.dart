@@ -11,19 +11,97 @@ import 'package:randonnee/screens/welcome_screen.dart';
 import 'package:randonnee/screens/map.dart';
 import 'package:randonnee/screens/hike_details.dart';
 import 'package:randonnee/models/hike.dart';
+import 'package:randonnee/services/database_service.dart';
+import 'package:randonnee/services/review_service.dart';
+import 'package:randonnee/screens/admin_screen.dart';
+import 'dart:math' show log, pi, pow, tan, cos;
+import 'package:latlong2/latlong.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:randonnee/screens/network_utils.dart';
+
+Future<void> _precacheTilesInBackground(DatabaseService dbService) async {
+  try {
+    // Zone géographique réduite pour les tests
+    final bounds = LatLngBounds(
+      LatLng(36.0, 2.0), // Nord-Ouest
+      LatLng(37.0, 3.0), // Sud-Est
+    );
+
+    // Niveaux de zoom utiles seulement
+    for (int z = 10; z <= 12; z++) {
+      final topLeft = bounds.northWest;
+      final bottomRight = bounds.southEast;
+
+      final x0 = ((topLeft.longitude + 180) / 360 * pow(2, z)).floor();
+      final x1 = ((bottomRight.longitude + 180) / 360 * pow(2, z)).floor();
+      final y0 =
+          ((1 -
+                  log(
+                        tan(topLeft.latitude * pi / 180) +
+                            1 / cos(topLeft.latitude * pi / 180),
+                      ) /
+                      2 *
+                      pow(2, z))
+              .floor());
+      final y1 =
+          ((1 -
+                  log(
+                        tan(bottomRight.latitude * pi / 180) +
+                            1 / cos(bottomRight.latitude * pi / 180),
+                      ) /
+                      2 *
+                      pow(2, z))
+              .floor());
+
+      // Limite le nombre de tuiles
+      int count = 0;
+      for (int x = x0; x <= x1 && count < 20; x++) {
+        for (int y = y0; y <= y1 && count < 20; y++) {
+          try {
+            await dbService.cacheMapTile(
+              x,
+              y,
+              z,
+              'https://tile.openstreetmap.org/$z/$x/$y.png',
+            );
+            count++;
+            await Future.delayed(const Duration(milliseconds: 10));
+          } catch (e) {
+            debugPrint('Erreur tuile $z/$x/$y: $e');
+          }
+        }
+      }
+    }
+  } catch (e) {
+    debugPrint('Erreur pré-cache: $e');
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final dbService = DatabaseService();
+  final networkUtils = NetworkUtils();
+
   // Initialisation des services
   final authService = AuthService();
   final hikeService = HikeService();
+  final reviewService = ReviewService(dbService);
+
+  // Initialisation minimale synchrone
+  await dbService.initMapCache();
+  await networkUtils.startMonitoring();
+  // Pré-cache non bloquant
+  _precacheTilesInBackground(dbService);
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => authService),
         ChangeNotifierProvider(create: (_) => hikeService),
+        ChangeNotifierProvider(create: (_) => reviewService),
+        Provider.value(value: dbService),
+        ChangeNotifierProvider.value(value: networkUtils),
       ],
       child: const MyApp(),
     ),
@@ -46,6 +124,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const AuthWrapper(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
+        '/admin': (context) => const AdminScreen(),
         '/home': (context) => const WelcomeScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/hike-details': (context) {

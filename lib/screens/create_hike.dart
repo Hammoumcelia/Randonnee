@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:randonnee/models/hike.dart';
 import 'package:randonnee/services/hike_service.dart';
 import 'package:provider/provider.dart';
+import 'package:randonnee/services/auth_service.dart';
 
 class CreateHikeScreen extends StatefulWidget {
   const CreateHikeScreen({super.key});
@@ -54,7 +55,12 @@ class _CreateHikeScreenState extends State<CreateHikeScreen> {
       );
 
       try {
-        Provider.of<HikeService>(context, listen: false).addHike(hike);
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final userId = int.parse(authService.currentUser!.id);
+
+        final hikeMap = hike.toMap();
+        hikeMap['creator_id'] = userId;
+        await Provider.of<HikeService>(context, listen: false).addHike(hike);
         Navigator.pop(context);
       } catch (e) {
         ScaffoldMessenger.of(
@@ -66,6 +72,18 @@ class _CreateHikeScreenState extends State<CreateHikeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
+
+    if (!authService.isAuthenticated || !authService.currentUser!.isAdmin) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Accès refusé')),
+        body: const Center(
+          child: Text(
+            'Vous devez être administrateur pour créer une randonnée',
+          ),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(title: const Text('Nouvelle randonnée')),
       body: Padding(

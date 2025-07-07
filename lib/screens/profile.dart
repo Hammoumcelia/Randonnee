@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:randonnee/services/auth_service.dart';
-import 'package:randonnee/widgets/messagerie_widget.dart';
+import 'package:randonnee/services/database_service.dart';
+
+import 'package:randonnee/screens/conversations_list.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -79,6 +81,52 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
 
+                  // Bouton Exportation de la base de données
+                  const SizedBox(height: 8),
+                  Card(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () async {
+                        try {
+                          final dbService = DatabaseService();
+                          final exportPath = await dbService.exportDatabase();
+
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Base exportée avec succès !\nChemin : $exportPath',
+                                ),
+                                duration: const Duration(seconds: 5),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Erreur lors de l\'export : $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.storage, color: Colors.blue),
+                            SizedBox(width: 16),
+                            Text('Exporter les données'),
+                            Spacer(),
+                            Icon(Icons.chevron_right, color: Colors.grey),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 32),
 
                   // Bouton Déconnexion
@@ -94,7 +142,9 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       onPressed: () async {
                         await authService.logout();
-                        Navigator.pushReplacementNamed(context, '/login');
+                        if (context.mounted) {
+                          Navigator.pushReplacementNamed(context, '/login');
+                        }
                       },
                       child: const Text(
                         'Déconnexion',
@@ -106,8 +156,7 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
 
-            // Onglet Messagerie
-            MessagerieWidget(), // Assurez-vous que ChatScreen est bien un widget valide
+            const ConversationListScreen(),
           ],
         ),
       ),

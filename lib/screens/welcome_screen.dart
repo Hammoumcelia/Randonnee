@@ -19,8 +19,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-    final hikeService = Provider.of<HikeService>(context, listen: false);
-    _displayedHikes = hikeService.availableHikes;
+    _loadHikes();
+  }
+
+  Future<void> _loadHikes() async {
+    try {
+      final hikeService = Provider.of<HikeService>(context, listen: false);
+      final hikes = await hikeService.availableHikes;
+      setState(() {
+        _displayedHikes = hikes;
+      });
+    } catch (e) {
+      print('❌ Erreur lors du chargement des randonnées : $e');
+    }
   }
 
   @override
@@ -35,7 +46,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           authService.isAuthenticated
               ? IconButton(
                 icon: const Icon(Icons.person),
-                onPressed: () => _showProfileOptions(context),
+                onPressed: _showProfileOptions,
               )
               : TextButton(
                 onPressed: () => Navigator.pushNamed(context, '/login'),
@@ -59,12 +70,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                 ),
               ),
-              onChanged: (value) {
+              onChanged: (value) async {
+                final hikeService = Provider.of<HikeService>(
+                  context,
+                  listen: false,
+                );
+                final hikes =
+                    value.isEmpty
+                        ? await hikeService.availableHikes
+                        : await hikeService.searchHikes(value);
                 setState(() {
-                  _displayedHikes =
-                      value.isEmpty
-                          ? hikeService.availableHikes
-                          : hikeService.searchHikes(value);
+                  _displayedHikes = hikes;
                 });
               },
             ),
@@ -77,15 +93,27 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 return HikeCard(
                   hike: hike,
                   showSaveButton: true,
+                  onTap: () {
+                    // Navigation vers les détails
+                    Navigator.pushNamed(
+                      context,
+                      '/hike-details',
+                      arguments: hike,
+                    );
+                  },
+                  onMapTap: () {
+                    // Navigation vers la carte
+                    Navigator.pushNamed(context, '/map', arguments: hike);
+                  },
                   onSave: () {
-                    hikeService.saveHike(hike);
+                    final userId = int.parse(
+                      authService.currentUser?.id ?? '0',
+                    );
+                    hikeService.saveHike(userId, hike);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('${hike.title} enregistrée !')),
                     );
                   },
-                  onTap:
-                      () =>
-                          Navigator.pushNamed(context, '/map', arguments: hike),
                 );
               },
             ),
@@ -95,13 +123,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  void _showProfileOptions(BuildContext context) {
+  void _showProfileOptions() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final isAdmin = authService.currentUser?.isAdmin ?? false;
     showModalBottomSheet(
       context: context,
       builder:
           (context) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (isAdmin)
+                ListTile(
+                  leading: const Icon(Icons.admin_panel_settings),
+                  title: const Text('Administration'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/admin');
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.person),
                 title: const Text('Mon profil'),

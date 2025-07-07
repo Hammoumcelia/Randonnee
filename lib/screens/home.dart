@@ -71,7 +71,7 @@ class MyHikesScreen extends StatelessWidget {
     final hikeService = Provider.of<HikeService>(context);
 
     return FutureBuilder<List<Hike>>(
-      future: hikeService.getHikes(),
+      future: hikeService.availableHikes,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -100,7 +100,7 @@ class MyHikesScreen extends StatelessWidget {
         }
 
         return RefreshIndicator(
-          onRefresh: () async => await hikeService.getHikes(),
+          onRefresh: () async => await hikeService.availableHikes,
           child: ListView.builder(
             padding: const EdgeInsets.all(16.0),
             itemCount: hikes.length,

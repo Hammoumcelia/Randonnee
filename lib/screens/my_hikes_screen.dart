@@ -2,43 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:randonnee/widgets/hike_card.dart';
 import 'package:randonnee/services/hike_service.dart';
-import 'package:randonnee/screens/map.dart'; // Assurez-vous d'importer MapScreen
+import 'package:randonnee/screens/map.dart';
+import 'package:randonnee/models/hike.dart';
+import 'package:randonnee/services/auth_service.dart';
 
 class MyHikesScreen extends StatelessWidget {
   const MyHikesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
     final hikeService = Provider.of<HikeService>(context);
-    final savedHikes = hikeService.savedHikes;
+    final userId = int.parse(authService.currentUser?.id ?? '0');
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Mes Randonnées')),
-      body:
-          savedHikes.isEmpty
-              ? const Center(child: Text('Aucune randonnée enregistrée'))
-              : ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: savedHikes.length,
-                itemBuilder: (context, index) {
-                  final hike = savedHikes[index];
-                  return HikeCard(
-                    hike: hike,
-                    showSaveButton: false,
-                    onTap:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => MapScreen(
-                                  initialHike: hike,
-                                  showOnlySelectedHike: true,
-                                ),
-                          ),
-                        ),
-                  );
-                },
+    return FutureBuilder<List<Hike>>(
+      future: Provider.of<HikeService>(context).getSavedHikes(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final hikes = snapshot.data ?? [];
+
+        return ListView.builder(
+          itemCount: hikes.length,
+          itemBuilder:
+              (context, index) => HikeCard(
+                hike: hikes[index],
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => MapScreen(initialHike: hikes[index]),
+                      ),
+                    ),
               ),
+        );
+      },
     );
   }
 }

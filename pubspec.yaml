@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
   provider: ^6.0.5
   flutter_map: ^8.1.1 # Version compatible avec les autres dépendances
+  flutter_map_tile_caching: ^10.1.1
   latlong2: ^0.9.1
   geolocator: ^14.0.0 # Version compatible
   flutter_polyline_points: ^2.1.0 # Version compatible
@@ -40,7 +41,12 @@ dependencies:
   path_provider: ^2.0.15
   dio: ^5.8.0+1 # Version compatible
   cupertino_icons: ^1.0.5
-  
+  sqflite: ^2.3.0
+  path: ^1.8.0
+  flutter_rating_bar: ^4.0.1 # Pour les étoiles interactives
+  intl: ^0.20.2 # Pour le formatage des dates
+  tuple: ^2.0.2
+  connectivity_plus: ^6.1.4
 
 dev_dependencies:
   flutter_test:
@@ -74,7 +80,7 @@ flutter:
     - assets/images/chrea.jpg
     - assets/images/djurdjura.jpg
     - assets/images/ghoufi.jpg
-  
+    - assets/images/map_placeholder.jpg
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
