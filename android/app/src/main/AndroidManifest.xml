@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.randonnee">
     <!-- Permissions de base -->
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -17,11 +18,46 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
 
+    <!-- Pour le SOS -->
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <!-- Pour les notifications -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+
+
     <application
         
         android:label="randonnee"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Ajoutez ces 3 éléments META-DATA et RECEIVER dans la balise application -->
+    <meta-data
+        android:name="com.google.firebase.messaging.default_notification_channel_id"
+        android:value="sos_channel" />
+    
+    <meta-data
+        android:name="flutter_local_notifications_channel_description"
+        android:value="Canal pour les alertes SOS" />
+    
+    <receiver 
+        android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+        android:exported="true"
+        android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
+        tools:node="replace">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+            <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED"/>
+        </intent-filter>
+    </receiver>
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -54,6 +54,33 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // En-tête avec logo + titre
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/logo.jpg',
+                      height: 80,
+                      width: 80,
+                      fit: BoxFit.cover,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Rando DZ',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Connexion',
+                      style: TextStyle(fontSize: 18, color: Colors.white70),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(

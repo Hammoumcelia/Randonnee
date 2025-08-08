@@ -50,9 +50,9 @@ class _MapScreenState extends State<MapScreen> {
   Hike? _selectedHike;
   bool _isTracking = false;
   bool _isOffline = false;
-  bool _isLoadingRoute = false;
+  final bool _isLoadingRoute = false;
   bool _isLoading = false;
-  List<Position3D> _pathPoints = [];
+  final List<Position3D> _pathPoints = [];
   List<LatLng> _routePoints = [];
   StreamSubscription<Position>? _positionStream;
 
@@ -358,7 +358,7 @@ class _MapScreenState extends State<MapScreen> {
       // Toujours charger depuis le cache d'abord
       final cachedRoute = await db.getRoute(hike.id);
 
-      if (!network.forceOfflineMode && await network.isOnline) {
+      if (!network.forceOfflineMode && network.isOnline) {
         // Mode en ligne - mettre à jour le cache
         try {
           final freshRoute = await _getRoutePoints(
@@ -489,7 +489,7 @@ class _MapScreenState extends State<MapScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -538,7 +538,7 @@ class _MapScreenState extends State<MapScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),

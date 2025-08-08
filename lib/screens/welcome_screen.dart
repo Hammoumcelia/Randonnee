@@ -41,7 +41,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Accueil'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.jpg',
+              height: 30,
+              width: 30,
+              fit: BoxFit.cover,
+            ),
+            const SizedBox(width: 8),
+            const Text('Rando DZ'),
+          ],
+        ),
         actions: [
           authService.isAuthenticated
               ? IconButton(

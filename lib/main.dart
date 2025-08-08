@@ -18,6 +18,8 @@ import 'dart:math' show log, pi, pow, tan, cos;
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:randonnee/screens/network_utils.dart';
+import 'package:randonnee/services/sos_service.dart';
+import 'package:randonnee/services/notification_service.dart';
 
 Future<void> _precacheTilesInBackground(DatabaseService dbService) async {
   try {
@@ -88,9 +90,12 @@ void main() async {
   final hikeService = HikeService();
   final reviewService = ReviewService(dbService);
 
+  await NotificationService.initialize();
   // Initialisation minimale synchrone
   await dbService.initMapCache();
   await networkUtils.startMonitoring();
+  final sosService = SOSService();
+  await sosService.initialize();
   // Pré-cache non bloquant
   _precacheTilesInBackground(dbService);
 
@@ -102,6 +107,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => reviewService),
         Provider.value(value: dbService),
         ChangeNotifierProvider.value(value: networkUtils),
+        Provider<SOSService>.value(value: sosService),
       ],
       child: const MyApp(),
     ),
@@ -113,6 +119,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Écoute des messages SOS
+    final sosService = Provider.of<SOSService>(context, listen: false);
+    sosService.messageStream.listen((message) {
+      // Affiche une notification
+      NotificationService.showSOSNotification(message);
+
+      // Affiche un SnackBar si l'app est au premier plan
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('SOS reçu: $message'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 10),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
     return MaterialApp(
       title: 'Hiking App',
       theme: ThemeData(
